@@ -1,32 +1,34 @@
-# Data and code for: *Museum venomics reveals an untapped biochemical archive in natural history collections*
+# Data and code for: *Unlocking the venom vault: Museum venomics reveals an untapped biochemical archive in natural history collections*
 
 This repository accompanies the manuscript:
 
 > Esquerré, D., Keogh, J. S., Dashevsky, D., Boileau, J., Carroll, A.,
-> Dunstan, N., & Mikheyev, A. S. *Museum venomics reveals an untapped
-> biochemical archive in natural history collections.*
+> Dunstan, N., Balchan, N. R., & Mikheyev, A. S. *Unlocking the venom vault:
+> Museum venomics reveals an untapped biochemical archive in natural history
+> collections.*
 
 Corresponding author: Damien Esquerré (desquerre@uow.edu.au), Environmental
 Futures Research Centre, School of Science, University of Wollongong, NSW
 2522, Australia.
 
+Archived version: https://doi.org/10.5281/zenodo.XXXXXXX
+
 ---
 
 ## Overview
 
-We applied quantitative proteomic mass spectrometry (LC–MS/MS) to preserved
-venom glands from 64 specimens (37 venomous snake species, 32 elapids and 5
-viperids) housed in Australian natural history collections, alongside fresh
-milked venom from 25 of the same species. Specimens spanned 0–57 years of
-formalin fixation followed by ethanol storage. We compared preserved-gland
-profiles to fresh venom profiles, tested whether specimen age degrades data
-quality, and integrated the results with a curated database of published
-snake venom proteomes to place museum venomics in the broader context of
-elapid and viperid venom diversity.
+We used quantitative proteomic mass spectrometry (LC–MS/MS) on venom glands
+from 61 preserved snakes in Australian natural history collections, stored for
+up to 57 years, and compared them with lyophilised milked venom from 25 of the
+same species. We also compared a formalin-fixed gland with milked venom from
+the same individual for five species (*Pseudechis australis*, *Agkistrodon
+contortrix*, *A. piscivorus*, *Crotalus atrox* and *Sistrurus miliarius*), and
+placed the results in the context of a curated database of published snake
+venom proteomes.
 
-This repository provides the processed data needed to reproduce all
-non-instrumental analyses and figures in the paper, plus the R script that
-generates them.
+This repository holds the processed data and the R script that reproduces the
+statistical analyses and figures in the paper. Raw mass spectrometry data are
+deposited in PRIDE/ProteomeXchange under accession **PXDXXXXXX**.
 
 ---
 
@@ -34,216 +36,133 @@ generates them.
 
 | File | Description |
 | --- | --- |
-| `MassSpecData.csv` | Per-protein iBAQ values from MaxQuant for every sample (raw output, joined with sample metadata and a manual toxin-family classification). |
-| `SummaryResults_VenomMassSpecExperiment.csv` | Per-sample percentage of each major toxin family. Derived from `MassSpecData.csv` by summing iBAQ values per family and re-expressing as a proportion of the total venom proteome of that sample. This is the main input to the analyses in the paper. |
-| `PublishedProteomes.csv` | Curated database of published venom proteomes from the literature, harmonised into the same toxin-family categorisation as the experimental data. Used for the cross-study PCA and comparison analyses. |
-| `AnalyseCleanData_publication_tidy.R` | R script that reproduces every figure and statistical analysis in the paper from the three CSVs above. |
-| `squamates_Title_Science2024_ultrametric_constrained.tre` | Pruned squamate phylogeny (Newick, ultrametric) used for the phylogeny-aligned dot plot. Sourced from Title et al. (2024) *Science*. **Required by the script** but not described as part of the proteomic dataset. |
+| `MuseumVenomics_analysis.R` | R script that reproduces the analyses and figures (see below). |
+| `SummaryResults_ThisStudy.csv` | Toxin-family composition of every sample from this study used in the paper (92 samples: museum glands, milked venoms and the five same-individual gland–venom pairs). |
+| `PublishedProteomes.csv` | The 413 published snake venom proteomes used in the paper, harmonised to the same toxin families. |
+| `squamates_Title_Science2024_ultrametric_constrained.tre` | Ultrametric squamate phylogeny (Newick) from Title et al. (2024) *Science*, used to order species in Fig. 3B. |
+| `MassSpecData.csv` | Per-protein MaxQuant iBAQ values with the manual toxin-family classification. Not read by the script; provided for protein-level re-analysis. |
+| `LICENSE` | CC0 1.0. |
 
 ---
 
-## File details
+## Data files
 
-### `MassSpecData.csv`
+### `SummaryResults_ThisStudy.csv`
 
-iBAQ values for every protein identified by MaxQuant in any sample. The file
-is wide and stores both protein-level annotation and per-sample abundance:
-
-* **Columns:** 1 row-label column followed by 7,648 protein columns (one per
-  protein group), each headed by the FASTA description string used by
-  MaxQuant.
-* **Rows 1–7 (annotation rows, identified by the value in column 1):**
-  `Protein`, `Family`, `Group`, `Subgroup`, `Function`, `Notes`,
-  `UniProt_ID`. These rows describe each protein column: the toxin family
-  it was assigned to (used in the summary table), its sub-classification
-  where applicable, putative function, and primary UniProt accession.
-* **Rows 8 onwards:** one row per sample. Cell values are MaxQuant iBAQ
-  intensities for that protein in that sample. Empty cells indicate the
-  protein was not detected. Row labels follow the pattern
-  `iBAQ <DEVC_id>_<initials>_<form>` where `form` is one of `Venom`
-  (milked venom), `Gland` (preserved gland), or other variants for the
-  same-individual *Pseudechis australis* validation pair.
-
-This file is provided so others can re-derive family-level summaries with
-alternative groupings or run their own protein-level analyses; the figures
-in the paper are produced from the summary tables below.
-
-### `SummaryResults_VenomMassSpecExperiment.csv`
-
-One row per sample (n = 93 after sample-quality filtering). The first 11
-columns are metadata; columns 12 onwards are the percentage of each major
-toxin family in that sample's venom proteome.
-
-Metadata columns:
+One row per sample: 11 metadata columns followed by the percentage of each
+toxin family in the sample's venom proteome.
 
 | Column | Description |
 | --- | --- |
-| `Sample` | Sample label as it appears in the MaxQuant output (`iBAQ ...`). |
-| `D.E.Venom.Collection.Number` | Internal collection identifier (`DEVC_NNN`); cross-references Table S1 of the manuscript. |
-| `Family`, `Genus`, `Species` | Taxonomy. |
-| `Species2` | `Genus species` concatenation, used as the species key throughout the analysis. |
-| `Form_short` | Sample type: `MilkedVenom`, `PreservedFixedGland` (formalin-fixed, ethanol-stored), or `FrozenEthanolGland` (frozen and/or ethanol-only, no formalin). |
-| `Sex` | `M`, `F`, or empty when unknown. |
-| `Date.collected` | Year of specimen collection. Empty for milked venom from Venom Supplies stock and for captive-bred animals without a recorded date. |
-| `SVL`, `Tail.length` | Snout–vent length and tail length when recorded; empty otherwise. |
+| `Sample` | Sample label as in the MaxQuant output (`iBAQ DEVC_NNN...`). |
+| `D.E.Venom.Collection.Number` | Collection identifier (`DEVC NNN`); cross-references the supplementary sample tables. |
+| `Family`, `Genus`, `Species` | Taxonomy (`Species` is the epithet). |
+| `Species2` | `Genus species`, used as the species key. |
+| `Form_short` | `MilkedVenom`, `PreservedFixedGland` (formalin-fixed, ethanol-stored) or `FrozenEthanolGland` (frozen and/or ethanol only). |
+| `Sex` | Where recorded. |
+| `Date.collected` | Year the specimen was collected (`NA` for most milked venoms). |
+| `SVL`, `Tail.length` | Snout–vent and tail length (mm) where recorded. |
 
-Toxin-family columns (values are percentages, summing to ~100 per row):
-`3FTx`, `PLA2`, `SVMP`, `SVSP`, `CTL`, `CRiSP`, `Kun`, `LAAO`, `5N`,
-`AChE`, `AmPep`, `Cys`, `Dis`, `Hyal`, `NGF`, `NP`, `Oha-Vesp`, `PDE`,
-`PLB`, `PLC`, `VEGF`, `Venom factor`, `Venom peroxiredoxin`, `Waprin`,
-`Other`. See Table S2 of the manuscript and `MassSpecData.csv` row 2
-(`Family`) for full descriptions and protein-level membership of each
-family.
+Toxin-family columns: `3FTx`, `PLA2`, `SVMP`, `SVSP`, `CTL`, `CRiSP`, `Kun`,
+`LAAO`, `5N`, `AChE`, `AmPep`, `Cys`, `Dis`, `Hyal`, `NGF`, `NP`, `Oha-Vesp`,
+`PDE`, `PLB`, `PLC`, `VEGF`, `Venom factor`, `Venom peroxiredoxin`, `Waprin`,
+`Other`. Each is the summed iBAQ of the family's proteins divided by the summed
+iBAQ of all venom proteins in the sample (×100). A value of 0 means the family
+was not detected.
 
-`Other` aggregates rare toxins not represented elsewhere. The
-analysis script re-normalises the percentages to 100 after dropping
-`Other` and the published-proteome `Unidentified` column, so all
-comparisons in the paper are over the 24 shared toxin families.
-
-Missing values: empty cells indicate either "not measured" (metadata) or
-"not detected" (toxin family proportions; treated as zero for the
-analyses).
+Nine samples that failed quality control are not included: DEVC_015
+(labelled *Crotalus unicolor* but with a cobra-like profile, a labelling
+error), DEVC_016 (*Agkistrodon bilineatus*), DEVC_048 and DEVC_054
+(*Pseudonaja*), DEVC_087 (*Denisonia devisi*), DEVC_095 (*Drysdalia
+coronoides*) and DEVC_096 (*Echiopsis curta*), all with low venom-protein
+content and/or highly divergent profiles; and DEVC_020_g and DEVC_021_g, gland
+tissue from specimens for which venom extracted from the same gland was
+analysed instead (DEVC_020_v, DEVC_021_v).
 
 ### `PublishedProteomes.csv`
 
-Curated database of published venom proteomes used for the cross-study
-PCA (Fig. 3) and the within/within-genus/outside-genus correlation
-controls. One row per published proteome.
+One row per published proteome. Metadata columns as above, plus `Locality`,
+`Technique`, `Reference` and `DOI`. Toxin families are reported as percentages
+of the total venom proteome; the 24 families used in the analyses already
+include any subclasses that some studies report separately (e.g. `L-3FTx`,
+`SV-GII-PLA2`), which are retained for reference along with extra categories
+(`Other`, `Unidentified`, `Peptides`, etc.). `TOTAL` is the sum as originally
+reported. Empty cells mean the family was not reported. The database was built
+from Tasoulis & Isbister (2017) *Toxins* 9:290 and Oliveira et al. (2022)
+*Nature Reviews Chemistry*, plus later literature. One proteome (Vanuopadath
+et al. 2022) is used in the pie charts but excluded from the PCA in Fig. 4.
 
-The first 11 columns mirror the metadata columns of
-`SummaryResults_VenomMassSpecExperiment.csv` (with an additional
-`Locality` column). The remaining columns are toxin-family percentages,
-including the same 24 families used in the experimental data plus a few
-additional categories that appear in some published studies (`DEF`,
-`Mpi`, `Waglerin`, `Endopeptidase`, `Trypsinogen`, `Protease inhibitor`,
-`Peptides`, `Unidentified`). The `TOTAL` column gives the sum the entry
-was originally reported with; `Reference` cites the source publication.
+### Processing applied by the script
 
-The starting points for the database were Tasoulis & Isbister (2017)
-*Toxins* 9:290 and Oliveira et al. (2022) *Frontiers in Ecology and
-Evolution* 10:1066144, supplemented with subsequent literature.
+`Other` and `Unidentified` are dropped and the 24 shared toxin families are
+re-normalised to 100% in every sample, so all comparisons use the same
+families.
 
-### `AnalyseCleanData_publication_tidy.R`
+---
 
-R script that reproduces every figure and table-style result reported in
-the paper. The analyses are organised into 21 numbered sections:
+## Running the script
 
-1. Package check and load.
-2. Path resolution (works under `Rscript`, RStudio, and interactive
-   sessions; outputs go to `./outputs/`).
-3. Load and prepare data; drop `Other`/`Unidentified` and re-normalise to
-   100% across the 24 shared toxin families.
-4. Build a combined experimental + published data frame and per-species
-   averages; produce the toxin matrix used for PCA.
-5. Define the toxin-family colour palette used throughout.
-6. Per-sample pie charts, full and filtered to families ≥1%.
-7. Per-species-average pie charts.
-8. Multi-pie PDF pages grouped by family.
-9. Toxin-legend grid (visual key).
-10. Per-species gland-vs-venom regression plots.
-11. Within-species pairwise correlation table
-    (`CorrelationResultsVenomVsGlands.csv`) using linear, Spearman, and
-    beta regression. This table underlies Fig. 1A.
-12. Within-species pairwise correlations (alternative formatting used
-    for the comparison-category histograms).
-13. Within-genus, between-species comparisons.
-14. Outside-genus comparisons.
-15. Histogram and density plots of correlation metrics by category
-    (Fig. 1A) plus a CSV of category means.
-16. Effect of specimen age on gland–venom correlation (Fig. 2A); fits
-    LMs and a species-random-intercept mixed model.
-17. Phylogeny import and imputation of missing tips (used in the
-    phylogeny-aligned dot plot).
-18. Per-species LM R² dot plot aligned with phylogeny (Fig. 2B).
-19. Same-individual *Pseudechis australis* validation (Fig. 1B).
-20. PCA of mean toxin profiles by species (Fig. 3) plus an interactive
-    Plotly version saved as HTML.
-21. `sessionInfo.txt` written to `outputs/`.
+Requires R (developed under R 4.4.2) and the CRAN packages `dplyr`, `tidyr`,
+`ggplot2`, `ggrepel`, `patchwork`, `betareg`, `ape`, `phytools`, `scatterpie`
+and `ggforce`. The script checks for them at start-up and prints the
+`install.packages()` command for any that are missing.
 
-#### Software environment
+Put the script and the three input files (two CSVs and the `.tre` file) in
+the same folder, then either run
 
-The script was developed under R ≥ 4.4 and uses the following CRAN
-packages. They are checked at startup; if any are missing the script
-prints the full `install.packages()` line:
+```
+Rscript MuseumVenomics_analysis.R
+```
 
-`dplyr`, `tidyr`, `reshape2`, `ggplot2`, `ggrepel`, `ggfortify`,
-`patchwork`, `cowplot`, `plotly`, `RColorBrewer`, `grDevices`, `pals`,
-`colorspace`, `scico`, `grid`, `betareg`, `ape`, `phytools`, `lme4`,
-`MuMIn`. `htmlwidgets` and `rmarkdown` are optional (used only to save
-the interactive PCA as a self-contained HTML).
+from that folder, or open the script in RStudio and source it. No paths need
+editing. All outputs are written to `./outputs/`, and `outputs/sessionInfo.txt`
+records the package versions used.
 
-`sessionInfo.txt` is written to the outputs folder on every run as a
-provenance record.
+Beta regressions that fail to converge for an individual comparison (sparse
+profiles) are reported with a message and recorded as `NA`. These are not
+errors.
 
-#### How to run
+---
 
-Place all four input files (the three CSVs and the `.tre` file) and the
-script in the same directory, then either:
+## Outputs and where they appear in the paper
 
-* run `Rscript AnalyseCleanData_publication_tidy.R` from that directory, or
-* open the script in RStudio and source it.
+| Paper | Output (in `outputs/`) |
+| --- | --- |
+| Fig. 1 | `Fig1_ComparisonCategories.pdf` |
+| Results: mean metrics per comparison category | `Tables/ComparisonCategory_means.csv` (all pairs: `Tables/Comparisons_*.csv`) |
+| Fig. 2 | `Fig2_SameSpecimen_pies.pdf`, `Fig2_SameSpecimen_regressions.pdf` |
+| Results: same-specimen statistics | `Tables/SameSpecimen_correlations.csv` |
+| Fig. 3A and age models | `Fig3A_SpecimenAge.pdf`, `Tables/GlandAge_models.txt` |
+| Fig. 3B | `Fig3B_Species.pdf`, `Fig3B_Phylogeny.pdf` |
+| Fig. 4 | `Fig4_PCA_log.pdf`; loadings and variance in `Tables/Fig4_PCA_log_*.csv` (raw-proportion PCA: `Fig4_PCA_raw.pdf`) |
+| Fig. S2 | `FigS2_ToxinFamilyRichness.pdf`, `Tables/ToxinFamilyRichness.csv` |
+| Fig. S3 | `FigS3_IntraspecificPCA.pdf` |
+| Appendix 1 | `Appendix1_PieCharts/`, `Appendix1_Regressions/` |
 
-The script auto-detects its own directory (via `here::here()` →
-`rstudioapi` → `Rscript --file=` → `getwd()`); no `setwd()` or path
-editing is needed. All outputs are written to `./outputs/`, including:
-
-* `outputs/PieCharts/` and `PieCharts_filteredOver1percent/` — per-sample
-  pies (full and ≥1% filtered).
-* `outputs/PieCharts_AveragePerSpecies/` (+ filtered) — per-species
-  averages.
-* `outputs/PieCharts_4x6_byFamily/` — multi-pie PDF pages by family.
-* `outputs/RegressionPlots/`, `RegressionPlots_filtered/`,
-  `RegressionPlots_combined/` — per-species gland-vs-venom regressions.
-* `outputs/Tables/` — `CorrelationResultsVenomVsGlands.csv`,
-  `results_within_genus_comparisons.csv`,
-  `results_outside_genus_comparisons.csv`,
-  `ComparisonCategory_means.csv`, `GlandAge_models.txt`.
-* Top-level PDFs: `ToxinLegendGrid.pdf`,
-  `WithinSpecies_metric_distributions.pdf`,
-  `ComparisonCategories_histograms.pdf`,
-  `ComparisonCategories_densities.pdf`, `GlandAge_vs_metrics.pdf`,
-  `PhylogeneticTree_imputed.pdf`, `DotPlot_LMR2_by_species.pdf`,
-  `PCA_meanToxinProfiles.pdf`, `PCA_interactive.html`.
-* `sessionInfo.txt`.
-
-The script catches numerical edge cases internally (sparse or perfectly
-collinear pairs that destabilise beta regression are reported via
-`message()` and skipped); these are warnings, not errors.
+Fig. S1 (venom-protein content of each sample) was produced from the
+protein-level data and is not generated by this script.
 
 ---
 
 ## Methods (brief)
 
-Sample preparation followed a modified filter-aided sample preparation
-(FASP) protocol for formalin-fixed tissues. Tryptic peptides were
-analysed by data-dependent LC–MS/MS on a Thermo Orbitrap Fusion ETD
-coupled to a Dionex UltiMate 3000 RSLCnano. Raw files were searched in
-MaxQuant v2.0.3.0 against UniProt restricted to taxon = Serpentes, with
-a 1% FDR at peptide-spectrum, protein, and site levels. Quantification
-used intensity-based absolute quantification (iBAQ). Each protein was
-manually assigned to one of 24 toxin families (Table S2 of the paper);
-relative abundance of each toxin family in each sample was computed as
-the sum of iBAQ values for that family divided by the sum of iBAQ values
-across all proteins identified in the sample. Nine gland samples with
-<15% venom proteins were removed prior to downstream analyses; in the
-retained samples all non-venom proteins were excluded before computing
-proportions. Full methodological detail is in the manuscript and its
-Supplementary Materials.
-
-Raw mass spectrometry data are deposited in the PRIDE proteomics
-repository (accession listed in the published manuscript).
+Gland tissue was processed with a filter-aided sample preparation (FASP)
+protocol for formalin-fixed tissue, digested with Trypsin/LysC and analysed by
+data-dependent LC–MS/MS on a Thermo Orbitrap Fusion ETD coupled to a Dionex
+UltiMate 3000 RSLCnano. Raw files were searched in MaxQuant v2.0.3.0 against
+UniProt (taxon = Serpentes) at 1% FDR, and proteins were quantified by iBAQ.
+Each venom protein was assigned manually to one of 24 toxin families. Gland and
+venom profiles were compared with linear regression, Spearman rank correlation
+and beta regression. Full details are in the manuscript and its supplementary
+material.
 
 ---
 
 ## License
 
-Data and code are released under CC0 1.0 (public domain dedication) for
-maximum re-use. If you use these data or code in your work, please cite
-the manuscript above.
-
----
+Data and code are released under CC0 1.0 (public domain dedication). If you
+use them, please cite the paper above.
 
 ## Contact
 
-For questions about the data, methods, or analysis pipeline please
-contact Damien Esquerré (desquerre@uow.edu.au).
+Damien Esquerré (desquerre@uow.edu.au)
